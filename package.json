@@ -1,0 +1,11 @@
+{
+  "name": "youtube-bot",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:images": "node scripts/test-sketch-images.mjs",
+    "test:images:py": ".venv/bin/python scripts/test_sketch_images.py",
+    "short:run": ".venv/bin/python scripts/run_short.py"
+  }
+}

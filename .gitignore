@@ -1,0 +1,7 @@
+node_modules/
+.venv/
+output/
+.env
+*.pem
+secrets/
+__pycache__/

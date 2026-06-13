@@ -1,0 +1,71 @@
+name: Daily Facts Short
+
+on:
+  schedule:
+    # Pick a time offset from the ghost_stories workflow to avoid overlap.
+    - cron: "0 4 * * *"   # 04:00 UTC ≈ 09:30 IST
+    - cron: "0 14 * * *"  # 14:00 UTC ≈ 19:30 IST
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Optional topic hint (leave empty for random pool pick)"
+        required: false
+        default: ""
+
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+  # Shared YouTube OAuth app (same client_id + client_secret for both channels)
+  YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+  YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
+  # Per-channel refresh tokens — one per YouTube channel
+  YT_REFRESH_TOKEN_HI: ${{ secrets.YT_REFRESH_TOKEN_HI }}
+  YT_REFRESH_TOKEN_EN: ${{ secrets.YT_REFRESH_TOKEN_EN }}
+  # Fallback if either channel-specific token is missing
+  YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      # Restore facts-channel history (separate from ghost_stories cache).
+      - name: Restore history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/history/
+          key: story-history-facts-${{ github.run_id }}
+          restore-keys: |
+            story-history-facts-
+
+      - name: Generate & upload Short
+        run: |
+          TOPIC="${{ github.event.inputs.topic || '' }}"
+          if [ -n "$TOPIC" ]; then
+            python scripts/run_short.py --channel facts --topic "$TOPIC" --upload --privacy public
+          else
+            python scripts/run_short.py --channel facts --upload --privacy public
+          fi
+
+      - name: Save history cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: output/history/
+          key: story-history-facts-${{ github.run_id }}

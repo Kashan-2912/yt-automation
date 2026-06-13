@@ -1,0 +1,73 @@
+name: Daily YouTube Short
+
+on:
+  schedule:
+    - cron: "0 10 * * *"
+    - cron: "30 23 * * *" 
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Channel preset (ghost_stories, facts, school_story, etc.)"
+        required: true
+        default: "ghost_stories"
+      topic:
+        description: "Optional topic hint"
+        required: false
+        default: ""
+
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+  YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+  YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
+  YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+  EDGE_TTS_VOICE: "en-US-ChristopherNeural"
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      # Restore story history from previous runs (prevents repeats)
+      - name: Restore history cache
+        uses: actions/cache/restore@v4
+        with:
+          path: output/history/
+          key: story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-${{ github.run_id }}
+          restore-keys: |
+            story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-
+
+      - name: Generate & upload Short
+        run: |
+          CHANNEL="${{ github.event.inputs.channel || 'ghost_stories' }}"
+          TOPIC="${{ github.event.inputs.topic || '' }}"
+
+          if [ -n "$TOPIC" ]; then
+            python scripts/run_short.py --channel "$CHANNEL" --topic "$TOPIC" --upload --privacy public
+          else
+            python scripts/run_short.py --channel "$CHANNEL" --upload --privacy public
+          fi
+
+      # Save history so next run knows what stories already exist
+      - name: Save history cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: output/history/
+          key: story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-${{ github.run_id }}

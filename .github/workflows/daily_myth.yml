@@ -1,0 +1,69 @@
+name: Daily Hindi Myth Short
+
+on:
+  schedule:
+    # 06:30 IST = 01:00 UTC; 18:30 IST = 13:00 UTC
+    - cron: "0 1 * * *"
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Optional — overrides rotation if set"
+        required: false
+        default: ""
+
+env:
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+  YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+  YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
+  YT_REFRESH_TOKEN_MYTH: ${{ secrets.YT_REFRESH_TOKEN_MYTH }}
+  # Optional: second bhakti channel (same video file uploaded twice).
+  # Set this secret if you want the same Short on another channel.
+  YT_REFRESH_TOKEN_MYTH_2: ${{ secrets.YT_REFRESH_TOKEN_MYTH_2 }}
+  YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Restore history + myth rotation state
+        uses: actions/cache/restore@v4
+        with:
+          path: output/history/
+          key: myth-history-${{ github.run_id }}
+          restore-keys: |
+            myth-history-
+
+      - name: Generate & upload Short
+        run: |
+          TOPIC="${{ github.event.inputs.topic || '' }}"
+          if [ -n "$TOPIC" ]; then
+            python scripts/run_short.py --channel hindi_myth --topic "$TOPIC" --upload --privacy public
+          else
+            python scripts/run_short.py --channel hindi_myth --upload --privacy public
+          fi
+
+      - name: Save history + myth rotation state
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: output/history/
+          key: myth-history-${{ github.run_id }}
