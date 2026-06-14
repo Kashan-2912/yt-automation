@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 from groq import Groq
@@ -46,11 +47,23 @@ def generate_short_pack(
     *,
     topic_hint: str | None = None,
     channel_id: str | None = None,
+    extra_context: str | None = None,
 ) -> dict[str, Any]:
     topic_hint = (topic_hint or os.environ.get("SHORT_TOPIC", "")).strip()
 
+    # Inject current date so Groq never references outdated years
+    now = datetime.now(timezone.utc)
+    current_date_str = now.strftime("%B %d, %Y")  # e.g. "June 14, 2026"
+    current_year = now.year
+
     user = (
         f"Channel style: {preset['label']}.\n"
+        f"TODAY'S DATE: {current_date_str}. Current year is {current_year}.\n"
+        f"YEAR RULE: All facts, stats, events, and references in narration, title, and description "
+        f"MUST reflect the world as of {current_year}. Do NOT reference any year before 2005. "
+        f"Do NOT use phrases like 'in recent years' — use the actual year. "
+        f"If a stat or record is from {current_year}, say '{current_year}'. "
+        f"The viewer is watching this in {current_year}.\n"
         f"Create ONE YouTube Short.\n"
     )
     if topic_hint:
@@ -64,6 +77,10 @@ def generate_short_pack(
             f"SEO TITLE RULE: The youtube_title MUST naturally include at least one of these keywords: "
             f"{kw_list}. Do NOT force it — pick whichever fits the topic best.\n"
         )
+
+    # Inject live FIFA 2026 context if provided (standings, results, fixtures)
+    if extra_context:
+        user += extra_context
 
     if channel_id:
         anti_repeat = history_prompt_block(channel_id)

@@ -1,4 +1,4 @@
-name: Daily Football Short
+name: Daily FIFA 2026 Short
 
 on:
   schedule:
@@ -6,8 +6,12 @@ on:
     - cron: "0 22 * * *"  # 22:00 UTC = 06:00 PM EDT (US Eastern, summer)
   workflow_dispatch:
     inputs:
+      channel:
+        description: "Channel preset (fifa_2026 or football)"
+        required: false
+        default: "fifa_2026"
       topic:
-        description: "Optional topic hint (leave empty for random pool pick)"
+        description: "Optional topic override (leave empty for auto-selection)"
         required: false
         default: ""
 
@@ -40,22 +44,28 @@ jobs:
       - name: Install Python deps
         run: pip install -r requirements.txt
 
-      # Restore story history — prevents repeating the same topic twice
+      # Auto-update FIFA 2026 match data before generating video
+      - name: Update FIFA 2026 match data
+        run: python scripts/update_wc_data.py
+        continue-on-error: true   # don't fail the whole run if fetch fails — use local data
+
+      # Restore story history — prevents repeating same topic twice
       - name: Restore history cache
         uses: actions/cache/restore@v4
         with:
           path: output/history/
-          key: story-history-football-${{ github.run_id }}
+          key: story-history-${{ github.event.inputs.channel || 'fifa_2026' }}-${{ github.run_id }}
           restore-keys: |
-            story-history-football-
+            story-history-${{ github.event.inputs.channel || 'fifa_2026' }}-
 
       - name: Generate & upload Short
         run: |
+          CHANNEL="${{ github.event.inputs.channel || 'fifa_2026' }}"
           TOPIC="${{ github.event.inputs.topic || '' }}"
           if [ -n "$TOPIC" ]; then
-            python scripts/run_short.py --channel football --topic "$TOPIC" --upload --privacy public
+            python scripts/run_short.py --channel "$CHANNEL" --topic "$TOPIC" --upload --privacy public
           else
-            python scripts/run_short.py --channel football --upload --privacy public
+            python scripts/run_short.py --channel "$CHANNEL" --upload --privacy public
           fi
 
       # Save history so next run doesn't repeat topics
@@ -64,4 +74,4 @@ jobs:
         if: always()
         with:
           path: output/history/
-          key: story-history-football-${{ github.run_id }}
+          key: story-history-${{ github.event.inputs.channel || 'fifa_2026' }}-${{ github.run_id }}

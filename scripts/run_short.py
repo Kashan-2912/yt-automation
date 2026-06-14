@@ -129,8 +129,10 @@ def main() -> None:
     myth_theme_for_commit: str | None = None
     myth_topic_for_commit: str | None = None
 
-    # Pick a topic: CLI --topic wins; else myth rotation; else random from topic_pool.
+    # Pick a topic: CLI --topic wins; else rotation; else random from topic_pool.
     topic_hint = args.topic.strip() or None
+    fifa_context: str | None = None   # live FIFA 2026 data block for Groq
+
     if not topic_hint:
         if preset.get("topic_rotation") == "myth":
             from pipeline.myth_topics import pick_myth_topic
@@ -138,6 +140,13 @@ def main() -> None:
             topic_hint, myth_theme_for_commit = pick_myth_topic(args.channel)
             myth_topic_for_commit = topic_hint
             print(f"[Myth] Theme today (IST): {myth_theme_for_commit} -> {topic_hint!r}")
+
+        elif preset.get("topic_rotation") == "fifa_2026":
+            from pipeline.fifa_2026 import pick_fifa_topic
+
+            topic_hint, fifa_context = pick_fifa_topic()
+            print(f"[FIFA 2026] Content angle selected: {topic_hint!r}")
+
         else:
             pool = preset.get("topic_pool") or []
             if pool:
@@ -151,6 +160,7 @@ def main() -> None:
     print("① Groq: generating script…")
     pack = generate_short_pack(
         preset, topic_hint=topic_hint, channel_id=args.channel,
+        extra_context=fifa_context,
     )
     (run_dir / "script.json").write_text(json.dumps(pack, indent=2, ensure_ascii=False), encoding="utf-8")
 

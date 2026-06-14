@@ -46,8 +46,90 @@ class ChannelPreset(TypedDict, total=False):
 
 PRESETS: dict[str, ChannelPreset] = {
     # ══════════════════════════════════════════════════════════════════
-    # PRIMARY CHANNEL — Modern Football Shorts (English)
-    # Era: 2005 to present. FIFA Club World Cup 2025: June 14 – July 13.
+    # FIFA WORLD CUP 2026 — Live Coverage Shorts (English)
+    # Topic is auto-selected daily from 2026/*.json data files.
+    # Angles: recap, preview, standings, player spotlight, prediction.
+    # ══════════════════════════════════════════════════════════════════
+    "fifa_2026": {
+        "id": "fifa_2026",
+        "label": "FIFA World Cup 2026 Live Coverage Shorts (English)",
+        "language": "en",
+        "min_words": 110,
+        "tts_voice": "en-US-GuyNeural",
+        "caption_font": "BebasNeue-Regular.ttf",
+        "caption_font_name": "Bebas Neue",
+        "yt_token_env": "YT_REFRESH_TOKEN",
+        "segment_count": 6,
+        "topic_rotation": "fifa_2026",
+        "topic_pool": [],   # not used — topic_rotation drives selection
+        "niche_keywords": [
+            "FIFA World Cup 2026", "World Cup 2026", "FIFA 2026",
+            "World Cup results", "World Cup 2026 highlights", "FIFA 2026 facts",
+            "World Cup preview", "World Cup standings",
+        ],
+        "groq_system_hint": (
+            "You create PUNCHY, FACT-PACKED YouTube Shorts about the FIFA World Cup 2026. "
+            "The tournament is LIVE RIGHT NOW in the USA, Canada, and Mexico. "
+            "Your audience are passionate football fans who want fast, specific, accurate content. "
+            "\n\n"
+            "YOU WILL RECEIVE LIVE FIFA 2026 DATA in the user message — use it. "
+            "Name real teams, real scorers, real minutes, real stadiums, real group positions. "
+            "Do NOT make up results or scores that are not in the data. "
+            "If covering a completed match, use the exact scorers and minutes provided. "
+            "If covering an upcoming match, use the fixture details provided. "
+            "\n\n"
+            "CONTENT ANGLES — the user message will specify which angle to use:\n"
+            "  RECAP: Narrate the match — opening goal, momentum shifts, key moment, final whistle impact.\n"
+            "  PREVIEW: What to expect — key players, form, tactical battle, your prediction.\n"
+            "  PREDICTION: Bold call — who wins, why, score prediction with reasoning.\n"
+            "  PLAYER SPOTLIGHT: Who is this player — career, style, why they matter in this WC.\n"
+            "  STANDINGS: Who leads, who is through, who is in danger, what each team needs.\n"
+            "  SHOCK ANALYSIS: Why the result shocked everyone, what it means for qualification.\n"
+            "  GROUP ANALYSIS: Full group narrative — favorites, dark horses, who advances.\n"
+            "\n\n"
+            "TITLE RULE: MUST include one of: 'FIFA World Cup 2026', 'World Cup 2026', "
+            "'FIFA 2026', 'World Cup results', 'World Cup standings', 'FIFA 2026 facts'. "
+            "Hook formats: '[Team] SHOCKS [Team] at World Cup 2026', "
+            "'FIFA 2026: [Player] SCORES in [match]', "
+            "'World Cup 2026 [Group] Standings — Who Goes Through?', "
+            "'[Team] vs [Team] Preview — FIFA 2026 Prediction'. Under 90 chars, no hashtags. "
+            "\n\n"
+            "DESCRIPTION: 2-3 specific sentences mentioning real team names and results. "
+            "End with: #FIFA2026 #WorldCup2026 #Football #FootballFacts #Shorts "
+            "\n\n"
+            "NARRATION: "
+            "- 110-140 English words, ONE continuous spoken paragraph. "
+            "- Open with the most specific, surprising fact — a score, a minute, a stat. "
+            "- Use real proper nouns throughout (player names, cities, group names). "
+            "- Be the friend who watched every match and is telling their mates. "
+            "- End with a forward-looking hook: what happens next, who to watch, bold take. "
+            "- No hashtags in narration. No vague filler like 'incredible scenes'. "
+            "\n\n"
+            "IMAGE PROMPTS: "
+            "- English only. Modern football visuals only. "
+            "- Vary: stadium crowd wide shot, player celebrating close-up, "
+            "  players battling for ball in action, referee with VAR screen, "
+            "  trophy or tournament banner, training ground scene. "
+            "- Reference specific settings: 'MetLife Stadium New York packed crowd', "
+            "  'SoFi Stadium Los Angeles green pitch aerial view', "
+            "  'Azteca Stadium Mexico City historic ground'. "
+            "- NO text, logos, scoreboards, club badges, or watermarks in images. "
+            "- NEVER: cartoon, anime, horror, food, nature, finance."
+        ),
+        "image_style_suffix": (
+            ", FIFA World Cup atmosphere, packed stadium, vivid national kit colors, "
+            "professional sports photography, dramatic floodlights, cinematic 4K, "
+            "sharp action shot, no text, no watermark, no logos, photorealistic"
+        ),
+        "image_negative_prompt": (
+            "cartoon, anime, illustration, painting, drawing, sketch, 3d render, "
+            "old vintage photo, black and white, finance, legal, food, horror, "
+            "low quality, blurry, watermark, logo, text, scoreboard overlay, deformed"
+        ),
+    },
+
+    # ══════════════════════════════════════════════════════════════════
+    # GENERAL FOOTBALL — Modern Football Facts Shorts (English)
     # ══════════════════════════════════════════════════════════════════
     "football": {
         "id": "football",
@@ -67,10 +149,13 @@ PRESETS: dict[str, ChannelPreset] = {
             "You create HIGH-ENERGY YouTube Shorts about MODERN football (soccer). "
             "Your audience is Gen-Z and millennial football fans who live and breathe the modern game. "
             "\n\n"
-            "ERA RULE — CRITICAL: Only cover events, players, and matches from 2005 ONWARDS. "
-            "Do NOT mention: Maradona's Hand of God (1986), Pelé's career (pre-2000), "
-            "1998 World Cup, 1994 World Cup, classic Ronaldo (R9), or any era before 2005. "
-            "The modern era starts with the 2006 World Cup and the rise of Messi and Ronaldo (CR7). "
+            "ERA RULE — CRITICAL: The current year is 2026. Only cover events, players, and matches from 2005 ONWARDS. "
+            "All stats must be current as of 2026. Do NOT mention: Maradona's Hand of God (1986), "
+            "Pelé's career (pre-2000), 1998 World Cup, 1994 World Cup, classic Ronaldo (R9), "
+            "or any era before 2005. When mentioning a record or stat, say '2026' or the actual year — "
+            "never say 'recently' or 'in recent years'. "
+            "The 2026 FIFA World Cup is upcoming (USA/Canada/Mexico hosts) — you may reference it as upcoming. "
+            "The FIFA Club World Cup 2025 took place in June–July 2025 in the USA — you may reference its results. "
             "\n\n"
             "NICHE LOCK — Stick to these pillars: "
             "(1) Modern players — Messi, Ronaldo (CR7), Mbappé, Haaland, Bellingham, Vinicius Jr, "
