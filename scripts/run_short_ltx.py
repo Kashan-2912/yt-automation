@@ -337,6 +337,8 @@ def main() -> None:
     ap.add_argument("--channel", default="fifa_2026", choices=list_channel_ids())
     ap.add_argument("--topic", default="", help="Optional topic hint for Groq.")
     ap.add_argument("--upload", action="store_true", help="Upload to YouTube after render.")
+    ap.add_argument("--instagram", action="store_true", help="Upload to Instagram Reels after render.")
+    ap.add_argument("--facebook", action="store_true", help="Upload to Facebook Page Reels after render.")
     ap.add_argument("--privacy", default="private", choices=["private", "unlisted", "public"])
     args = ap.parse_args()
 
@@ -457,6 +459,28 @@ def main() -> None:
             refresh_token_env=yt_token_env,
         )
         print(f"   Uploaded! https://www.youtube.com/shorts/{vid}")
+
+    # 7.5 Upload to Instagram Reels (optional)
+    if args.instagram:
+        from pipeline.instagram_upload import publish_instagram_reel
+        print("\n[Instagram] Uploading to Instagram Reels...")
+        try:
+            caption = pack.get("youtube_description", "")
+            media_id = publish_instagram_reel(out_video, caption)
+            print(f"   [Instagram] Uploaded Reel! Media ID: {media_id}")
+        except Exception as e:
+            print(f"   [Instagram] Upload failed: {e}")
+
+    # 7.6 Upload to Facebook Page Reels (optional)
+    if args.facebook:
+        from pipeline.instagram_upload import publish_facebook_reel
+        print("\n[Facebook] Uploading to Facebook Page Reels...")
+        try:
+            caption = pack.get("youtube_description", "")
+            video_id = publish_facebook_reel(out_video, caption)
+            print(f"   [Facebook] Uploaded Reel! Video ID: {video_id}")
+        except Exception as e:
+            print(f"   [Facebook] Upload failed: {e}")
 
     # Save to history
     summary = " ".join(narration.split()[:25]) + "…"

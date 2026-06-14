@@ -116,6 +116,8 @@ def main() -> None:
     ap.add_argument("--channel", required=True, choices=list_channel_ids())
     ap.add_argument("--topic", default="", help="Optional topic hint for Groq.")
     ap.add_argument("--upload", action="store_true", help="Upload to YouTube after render.")
+    ap.add_argument("--instagram", action="store_true", help="Upload to Instagram Reels after render.")
+    ap.add_argument("--facebook", action="store_true", help="Upload to Facebook Page Reels after render.")
     ap.add_argument("--privacy", default="private", choices=["private", "unlisted", "public"])
     args = ap.parse_args()
 
@@ -215,7 +217,7 @@ def main() -> None:
     if variants:
         for v in variants:
             node = pack["variants"][v["lang"]]
-            _render_and_upload(
+            video_path = _render_and_upload(
                 variant_label=v["label"],
                 narration=node["full_narration"],
                 title=node["youtube_title"],
@@ -230,6 +232,8 @@ def main() -> None:
                 privacy=args.privacy,
                 yt_token_env=v.get("yt_token_env", "YT_REFRESH_TOKEN"),
             )
+            if not primary_video_path:
+                primary_video_path = video_path
     else:
         primary_video_path = _render_and_upload(
             variant_label=preset.get("language", "en"),
@@ -272,6 +276,34 @@ def main() -> None:
                 refresh_token_env=env_name,
             )
             print(f"   Extra channel video: https://www.youtube.com/shorts/{vid_extra}")
+
+    # Instagram Reels upload (optional)
+    if args.instagram and primary_video_path:
+        from pipeline.instagram_upload import publish_instagram_reel
+        print("\n[Instagram] Uploading to Instagram Reels...")
+        try:
+            caption = pack.get("youtube_description", "")
+            if variants:
+                first_lang = variants[0]["lang"]
+                caption = pack["variants"][first_lang].get("youtube_description", "")
+            media_id = publish_instagram_reel(primary_video_path, caption)
+            print(f"   [Instagram] Uploaded Reel! Media ID: {media_id}")
+        except Exception as e:
+            print(f"   [Instagram] Upload failed: {e}")
+
+    # Facebook Reels upload (optional)
+    if args.facebook and primary_video_path:
+        from pipeline.instagram_upload import publish_facebook_reel
+        print("\n[Facebook] Uploading to Facebook Page Reels...")
+        try:
+            caption = pack.get("youtube_description", "")
+            if variants:
+                first_lang = variants[0]["lang"]
+                caption = pack["variants"][first_lang].get("youtube_description", "")
+            video_id = publish_facebook_reel(primary_video_path, caption)
+            print(f"   [Facebook] Uploaded Reel! Video ID: {video_id}")
+        except Exception as e:
+            print(f"   [Facebook] Upload failed: {e}")
 
     print("\n✓ Done.")
 

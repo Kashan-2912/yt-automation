@@ -2,8 +2,9 @@ name: Daily FIFA 2026 Short
 
 on:
   schedule:
-    - cron: "0 15 * * *"  # 15:00 UTC = 11:00 AM EDT (US Eastern, summer)
-    - cron: "0 22 * * *"  # 22:00 UTC = 06:00 PM EDT (US Eastern, summer)
+    - cron: "0 14 * * *"   # 14:00 UTC = 10:00 AM EDT (US Morning peak)
+    - cron: "0 19 * * *"   # 19:00 UTC = 03:00 PM EDT (US Afternoon peak)
+    - cron: "0 0 * * *"    # 00:00 UTC = 08:00 PM EDT (US Evening peak)
   workflow_dispatch:
     inputs:
       channel:
@@ -21,6 +22,10 @@ env:
   YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
   YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
   YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+  INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+  INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+  FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+  FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN }}
   EDGE_TTS_VOICE: "en-US-GuyNeural"
 
 jobs:
@@ -63,9 +68,9 @@ jobs:
           CHANNEL="${{ github.event.inputs.channel || 'fifa_2026' }}"
           TOPIC="${{ github.event.inputs.topic || '' }}"
           if [ -n "$TOPIC" ]; then
-            python scripts/run_short.py --channel "$CHANNEL" --topic "$TOPIC" --upload --privacy public
+            python -u scripts/run_short_ltx.py --channel "$CHANNEL" --topic "$TOPIC" --upload --instagram --facebook --privacy public
           else
-            python scripts/run_short.py --channel "$CHANNEL" --upload --privacy public
+            python -u scripts/run_short_ltx.py --channel "$CHANNEL" --upload --instagram --facebook --privacy public
           fi
 
       # Save history so next run doesn't repeat topics
