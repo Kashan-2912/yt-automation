@@ -36,6 +36,10 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Force UTF-8 output so Unicode/emoji prints work on Windows terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -133,12 +137,12 @@ def main() -> None:
 
             topic_hint, myth_theme_for_commit = pick_myth_topic(args.channel)
             myth_topic_for_commit = topic_hint
-            print(f"📿 Myth theme today (IST): {myth_theme_for_commit} → {topic_hint!r}")
+            print(f"[Myth] Theme today (IST): {myth_theme_for_commit} -> {topic_hint!r}")
         else:
             pool = preset.get("topic_pool") or []
             if pool:
                 topic_hint = random.choice(pool)
-                print(f"🎲 Random topic from pool: {topic_hint!r}")
+                print(f"[Topic] Random from pool: {topic_hint!r}")
 
     variants = preset.get("variants") or []
     primary_video_path: Path | None = None

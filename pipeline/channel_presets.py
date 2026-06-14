@@ -2,6 +2,10 @@
 
 Each preset includes a topic_pool — a list of setting/situation ideas.
 One is picked randomly per run if no --topic is provided, ensuring variety.
+
+PRIMARY NICHE: Modern Football & Sports (2005–present)
+Channel capitalises on FIFA Club World Cup 2025 (June–July) and global football buzz.
+Content era: 2005 onwards ONLY. No Maradona, no 1980s/90s legends.
 """
 
 from __future__ import annotations
@@ -11,345 +15,204 @@ from typing import TypedDict
 
 class Variant(TypedDict, total=False):
     """One output variant — same images, different audio/subs/upload target."""
-    lang: str  # "en", "hi", etc. used as key in Groq response
-    label: str  # human-readable for logs
-    tts_voice: str  # Edge TTS voice (e.g. "hi-IN-MadhurNeural")
-    caption_font: str  # font filename inside assets/fonts/
-    caption_font_name: str  # FFmpeg-visible font family name
-    yt_token_env: str  # env var name for YouTube refresh token (e.g. "YT_REFRESH_TOKEN_HI")
-    min_words: int  # min word count for narration validation
+    lang: str
+    label: str
+    tts_voice: str
+    caption_font: str
+    caption_font_name: str
+    yt_token_env: str
+    min_words: int
 
 
 class ChannelPreset(TypedDict, total=False):
     id: str
     label: str
     groq_system_hint: str
-    segment_count: int  # images + script beats
+    segment_count: int
     topic_pool: list[str]
-    image_style_suffix: str  # appended to every image prompt
-    image_negative_prompt: str  # passed as negative prompt
-    # Single-variant fields (backward compat — used when `variants` is absent):
+    niche_keywords: list[str]
+    image_style_suffix: str
+    image_negative_prompt: str
     language: str
     tts_voice: str
     caption_font: str
     caption_font_name: str
-    min_words: int  # min word count for narration validation (single-variant)
-    # Multi-variant mode — Groq returns translations for each lang, pipeline renders+uploads per variant.
+    min_words: int
     variants: list[Variant]
-    # topic_rotation: "myth" → pipeline/myth_topics.py (IST day theme + no-repeat within theme)
     topic_rotation: str
-    # Single-variant YouTube upload: which env var holds this channel's refresh token
     yt_token_env: str
-    # Extra uploads: same MP4 uploaded to additional channels using these env var names
     extra_yt_token_envs: list[str]
 
 
 PRESETS: dict[str, ChannelPreset] = {
-    "facts": {
-        "id": "facts",
-        "label": "Mind-blowing facts Short (bilingual — Hindi + English)",
-        "variants": [
-            {
-                "lang": "hi",
-                "label": "Hindi",
-                "tts_voice": "hi-IN-MadhurNeural",
-                "caption_font": "NotoSansDevanagari-Bold.ttf",
-                "caption_font_name": "Noto Sans Devanagari",
-                "yt_token_env": "YT_REFRESH_TOKEN_HI",
-                "min_words": 80,
-            },
-            {
-                "lang": "en",
-                "label": "English",
-                "tts_voice": "en-US-GuyNeural",
-                "caption_font": "BebasNeue-Regular.ttf",
-                "caption_font_name": "Bebas Neue",
-                "yt_token_env": "YT_REFRESH_TOKEN_EN",
-                "min_words": 70,
-            },
-        ],
-        "groq_system_hint": (
-            "You write punchy YouTube Shorts about surprising, verified facts — in MULTIPLE languages. "
-            "The same fact will be published as separate videos on different language channels. "
-            "STRUCTURE: hook fact in opening, supporting facts in the middle, punchline + takeaway at end. "
-            "TONE: energetic, curious, confident. No clickbait lies. "
-            "Each fact must be broadly accurate; if unsure, use safer wording like "
-            "'scientists believe' or 'some research suggests'. "
-            "No medical advice. No hashtags inside narration. Original phrasing only. "
-            "IMAGE PROMPT RULE: write image prompts in ENGLISH only. Describe real photographs or documentary stills. "
-            "Use real-world subjects, real lighting, real environments. NEVER write 'cartoon', 'illustration', "
-            "'anime', or 'stylized'. Examples: 'a real octopus underwater in clear blue ocean, sunlight rays', "
-            "'close-up macro photo of a honeybee on a yellow flower', "
-            "'wide shot of Saturn V rocket launching at night with flames'. "
-            "BILINGUAL RULE: the SAME story/facts must be expressed naturally in each language — "
-            "do not literally translate word-for-word; rephrase so each version sounds native and flows well. "
-            "HINDI LENGTH: variants.hi.full_narration should be long-form — "
-            "aim ~150 Devanagari words (acceptable band roughly 135-170) with rich detail and connective phrases "
-            "so the Hindi voiceover is substantial (~55-70 seconds). "
-            "ENGLISH LENGTH: variants.en.full_narration must be long-form too — "
-            "aim 120-155 English words (never a short teaser); include hook, 3-4 developed beats with examples, "
-            "and a strong closing line so the English voiceover is ~40-50 seconds."
-        ),
-        "segment_count": 5,
-        "image_style_suffix": (
-            ", photorealistic documentary photography, cinematic lighting, ultra detailed, "
-            "8k, sharp focus, professional camera, National Geographic style, realistic textures, "
-            "natural colors, depth of field, no text, no captions, no watermark, no logos"
-        ),
-        "image_negative_prompt": (
-            "cartoon, anime, illustration, painting, drawing, sketch, 3d render, cgi, "
-            "stylized, flat colors, low quality, blurry, watermark, logo, text, signature, "
-            "deformed, ugly, extra limbs, mutated"
-        ),
-        "topic_pool": [
-            # Space & Universe
-            "black holes", "neutron stars", "Mars mysteries", "Moon secrets", "exoplanets",
-            "the Big Bang", "dark matter", "the asteroid belt", "Saturn's rings",
-            "Jupiter's storms", "sounds in space", "dead stars", "parallel universes",
-            "time dilation", "cosmic radiation", "space colonies", "SETI and alien signals",
-            "the Voyager probe", "sun facts", "galaxy collisions", "space weather",
-            "quantum physics weirdness", "multiverse theory", "wormholes",
-            "the edge of the observable universe",
-            # Animals & Nature
-            "deep sea creatures", "parasites that control minds", "animal superpowers",
-            "extinct animals", "animals that basically can't die",
-            "venomous creatures of India", "crow intelligence", "the octopus brain",
-            "the mantis shrimp", "tardigrades", "animal sleep habits", "migration mysteries",
-            "camouflage masters", "animals that mourn their dead", "bioluminescence",
-            "carnivorous plants", "fungi intelligence", "ant colonies", "whale communication",
-            "spider silk science", "the immortal jellyfish", "animal self-medication",
-            "dolphin language", "electric eels", "naked mole rats", "bird navigation",
-            "snake facts", "insects you didn't know exist", "animals in Indian forests",
-            "microorganisms living in your body",
-            # Human Body & Psychology
-            "brain illusions", "the science of sleep paralysis", "memory tricks",
-            "the placebo effect", "pain tolerance", "human senses you didn't know about",
-            "DNA secrets", "the gut-brain connection", "adrenaline effects",
-            "the subconscious mind", "phobias explained", "the science of dreams",
-            "body language secrets", "why we laugh", "human evolution oddities",
-            "the science of aging", "near-death experiences", "hypnosis facts",
-            "déjà vu explained", "emotional memory", "synesthesia", "muscle memory",
-            "the fear response", "the science of addiction", "human body record breakers",
-            # History & Civilizations
-            "Ancient Egypt secrets", "dark facts about the Roman Empire", "lost civilizations",
-            "medieval torture devices", "ancient Indian empires", "Mughal secrets",
-            "forgotten inventions", "unknown facts about World War 2", "Cold War spy stories",
-            "Greek myths debunked", "real Viking history", "the Aztec civilization",
-            "the Indus Valley mystery", "the Maurya Empire", "the Chola naval empire",
-            "the history of slavery", "ancient medicines", "the oldest cities on Earth",
-            "ancient trade routes", "Genghis Khan facts", "the real Cleopatra",
-            "Alexander the Great", "dark facts about British India",
-            "untold partition of India stories", "ancient Chinese secrets",
-            "the real life of samurai", "real pirate history", "the Byzantine Empire",
-            "the Ottoman Empire", "ancient astronomy",
-            # India Specific
-            "India's unsolved mysteries", "cursed places in India",
-            "unknown Indian inventions", "weird Indian laws",
-            "dark stories from Indian mythology", "haunted forts of India",
-            "untold Indian freedom fighters", "India's richest kings in history",
-            "origin stories of Indian street food", "India's rarest animals",
-            "Indian space program facts", "the engineering of ancient temples",
-            "India's tribal cultures", "Bollywood dark secrets",
-            "India's geographical oddities", "mysteries of Indian rivers",
-            "Indian martial arts", "underground cities of India",
-            "India's hottest and coldest places", "facts about Indian languages",
-            # Money & Power
-            "the richest people in history", "how billionaires think",
-            "the dark side of corporations", "famous stock market crashes",
-            "consequences of money printing", "heists gone wrong",
-            "underground economies", "tax havens explained",
-            "the richest countries in history", "failed currencies",
-            "the gold standard", "dark stories from crypto", "the mafia economy",
-            "war profiteering", "untold stories of India's richest businessmen",
-            "how banks really work", "money psychology", "poverty traps",
-            "famous economic collapses", "the dark side of diamonds",
-            # Science & Tech
-            "when AI went wrong", "internet dark secrets", "nuclear energy facts",
-            "genetic engineering", "CRISPR experiments", "lab-grown meat",
-            "deepfake technology", "social media algorithms", "dark web facts",
-            "surveillance technology", "robot evolution", "battery technology secrets",
-            "shocking climate science facts", "plastic in the human body",
-            "microwave radiation", "5G facts vs myths", "quantum computing",
-            "the history of bioweapons", "chemical reactions gone wrong",
-            "future technology predictions",
-            # Food & Substances
-            "foods your brain is addicted to", "the dark side of sugar",
-            "fast food secrets", "spices that changed history",
-            "poisonous foods we eat daily", "the science of fermentation",
-            "caffeine deep dive", "the science of alcohol",
-            "the spiciest things on Earth", "food frauds worldwide",
-            "ancient recipes still used today", "rare foods only the rich eat",
-            "the history of Indian spices", "foods banned around the world",
-            "GMO food facts",
-            # Crime & Dark Secrets
-            "unsolved murders", "serial killer psychology",
-            "cults that shocked the world", "government experiments on humans",
-            "corporate cover-ups", "art heists", "counterfeit economies",
-            "organized crime facts", "famous prison escapes",
-            "cold cases solved by DNA", "the biggest cyber crimes ever",
-            "assassination plots", "whistleblower stories",
-            "the dark side of Hollywood", "scams that fooled millions",
-            "human trafficking networks", "drug cartel economics",
-            "facts about corrupt governments", "identity theft stories",
-            "history of con artists",
-            # Wildcards
-            "dreams that predicted the future", "coincidences too weird to be real",
-            "things banned in other countries", "phobias with unpronounceable names",
-            "world records that sound fake", "the science of optical illusions",
-            "superstitions with real origins", "things that didn't exist 20 years ago",
-            "urban legends debunked", "numbers with dark histories",
-        ],
-    },
-    "hindi_myth": {
-        "id": "hindi_myth",
-        "label": "Hindi mythology & devotion Shorts (Ganesha → Shiva → … by IST day)",
-        "topic_rotation": "myth",
-        "language": "hi",
-        "min_words": 100,
-        # Edge TTS Hindi: Swara = warm female (common for katha / devotion). Override: hi-IN-MadhurNeural (male).
-        "tts_voice": "hi-IN-SwaraNeural",
-        "caption_font": "NotoSansDevanagari-Bold.ttf",
-        "caption_font_name": "Noto Sans Devanagari",
-        "yt_token_env": "YT_REFRESH_TOKEN_MYTH",
-        "extra_yt_token_envs": ["YT_REFRESH_TOKEN_MYTH_2"],
-        "groq_system_hint": (
-            "You write respectful Hindi Shorts about Indian mythology, epics, and devotion — for a general audience. "
-            "LANGUAGE: full_narration, youtube_title, youtube_description entirely in Devanagari Hindi. "
-            "IMAGE PROMPTS: English only — cinematic scene descriptions (no text in image). "
-            "CRITICAL LENGTH: full_narration 105-135 Devanagari words (~40-50 sec spoken). "
-            "Tone: warm, storytelling, reverent — NOT mocking faith. Retell traditional narratives in your own words; "
-            "do not copy long scripture passages. PG-13, no graphic gore, no hate toward any group. "
-            "No hashtags in narration. The creator gives a specific story angle in the user message — stay on that topic."
-        ),
+    # ══════════════════════════════════════════════════════════════════
+    # PRIMARY CHANNEL — Modern Football Shorts (English)
+    # Era: 2005 to present. FIFA Club World Cup 2025: June 14 – July 13.
+    # ══════════════════════════════════════════════════════════════════
+    "football": {
+        "id": "football",
+        "label": "Modern Football Facts & Stories Shorts (English, 2005–present)",
+        "language": "en",
+        "min_words": 110,
+        "tts_voice": "en-US-GuyNeural",
+        "caption_font": "BebasNeue-Regular.ttf",
+        "caption_font_name": "Bebas Neue",
+        "yt_token_env": "YT_REFRESH_TOKEN",
         "segment_count": 6,
+        "niche_keywords": [
+            "football facts", "soccer facts", "FIFA facts", "football secrets",
+            "football records", "football shorts", "sports facts", "football 2025",
+        ],
+        "groq_system_hint": (
+            "You create HIGH-ENERGY YouTube Shorts about MODERN football (soccer). "
+            "Your audience is Gen-Z and millennial football fans who live and breathe the modern game. "
+            "\n\n"
+            "ERA RULE — CRITICAL: Only cover events, players, and matches from 2005 ONWARDS. "
+            "Do NOT mention: Maradona's Hand of God (1986), Pelé's career (pre-2000), "
+            "1998 World Cup, 1994 World Cup, classic Ronaldo (R9), or any era before 2005. "
+            "The modern era starts with the 2006 World Cup and the rise of Messi and Ronaldo (CR7). "
+            "\n\n"
+            "NICHE LOCK — Stick to these pillars: "
+            "(1) Modern players — Messi, Ronaldo (CR7), Mbappé, Haaland, Bellingham, Vinicius Jr, "
+            "Salah, De Bruyne, Lewandowski, Benzema, Modric, Pedri, Yamal, Gavi, Neymar, Kane, Saka. "
+            "(2) Modern clubs (2005–present) — Real Madrid UCL runs, Man City under Pep, "
+            "Liverpool under Klopp, Barcelona's tiki-taka era and decline, PSG's superstar era, "
+            "Chelsea's 2012 UCL win, Inter Milan's treble 2010, Atletico Madrid upsets. "
+            "(3) FIFA Club World Cup 2025 — happening NOW, June 14–July 13, 32 clubs, USA. "
+            "(4) Modern World Cups — 2006 (Zidane headbutt), 2010 (Spain & Iniesta), "
+            "2014 (Germany 7-1 Brazil), 2018 (Mbappé's debut), 2022 (Messi's epic final). "
+            "(5) Transfer drama — Neymar €222m to PSG, Mbappé to Real Madrid, Haaland to Man City, "
+            "Bellingham, De Ligt, Pogba, modern mega-money moves. "
+            "(6) Modern managers — Pep Guardiola, Jürgen Klopp, Carlo Ancelotti, Mourinho at Real, "
+            "Conte's Inter treble, Tuchel, Ten Hag. "
+            "(7) Modern records, stats, controversies — VAR drama, modern wages, social media feuds, "
+            "modern doping, modern tactics (gegenpressing, tiki-taka, high press). "
+            "\n\n"
+            "TITLE RULE: Include at least one of these SEO keywords naturally: "
+            "'football facts', 'soccer facts', 'FIFA facts', 'football secrets', "
+            "'football records', 'sports facts', 'football 2025'. "
+            "Hook formats that work: 'Nobody Talks About This', 'The Truth About X', "
+            "'X Insane Facts About [player/club]', 'What Really Happened When...', "
+            "'[Player] Did This And Everyone Ignored It'. Under 90 characters, no hashtags. "
+            "\n\n"
+            "DESCRIPTION: 2-3 punchy sentences. "
+            "End with: #Football #FIFA #FootballFacts #SoccerFacts #Messi #Ronaldo #Shorts "
+            "\n\n"
+            "NARRATION: "
+            "- 110-140 English words, ONE continuous spoken paragraph. "
+            "- Sentence 1: drop the most shocking stat or fact immediately — no warm-up. "
+            "- Middle: 3-4 specific details — real names, real scores, real years (post-2005 only). "
+            "- Ending: punchy one-liner that makes the viewer want to share it. "
+            "- Tone: fast, passionate, like a mates' football podcast — not a lecture. "
+            "- Use stats where possible: goals scored, transfer fees, match scores, minutes. "
+            "- No segment labels, no bullet points, no hashtags inside narration. "
+            "\n\n"
+            "IMAGE PROMPTS: "
+            "- English only. Modern football visuals only. "
+            "- Good: 'packed modern stadium at night with green pitch and floodlights, aerial view', "
+            "'footballer in white kit celebrating a Champions League goal, arms raised, crowd behind', "
+            "'two players battling for the ball in a packed Premier League stadium', "
+            "'football manager in suit giving instructions on the touchline, close-up', "
+            "'UEFA Champions League trophy on a podium with golden confetti', "
+            "'close-up of modern football boot striking a ball, motion blur', "
+            "'football player on training ground doing sprint drills, morning light'. "
+            "- Vary: wide stadium, action duel, celebration, trophy, training, close-up. "
+            "- NEVER: cartoon, anime, old black-and-white photos, Maradona, finance, food, horror. "
+            "- No text, player name badges, club logos, or watermarks."
+        ),
         "image_style_suffix": (
-            ", cinematic Indian mythology digital painting, golden hour lighting, rich jewel tones, "
-            "detailed divine atmosphere, epic composition, respectful devotional art style, "
-            "high quality illustration, no text, no watermark, no logos"
+            ", modern sports photography, dramatic stadium floodlights, high shutter speed, "
+            "ultra sharp, cinematic 4K, vibrant saturated colors, professional sports journalism, "
+            "no text overlays, no watermark, no logos, photorealistic"
         ),
         "image_negative_prompt": (
-            "photorealistic human face close-up as real celebrity, gore, blood, horror jumpscare, "
-            "disrespectful parody, political symbols, watermark, text, logo, blurry, low quality, "
-            "multiple conflicting styles, broken anatomy"
-        ),
-        "topic_pool": [],
-    },
-    "school_story": {
-        "id": "school_story",
-        "label": "School drama / storytime Short",
-        "groq_system_hint": (
-            "You write fictional school storytime Shorts. Tone: suspense + heart. "
-            "Characters are original (no copyrighted names). Hook in line 1. "
-            "Build to one memorable twist. Keep each kid-safe."
-        ),
-        "segment_count": 5,
-        "topic_pool": [
-            "the new kid nobody noticed",
-            "a locker that wouldn't open",
-            "a substitute teacher with a secret",
-            "the lost lunchbox mystery",
-            "a field trip gone strange",
-            "the science fair disaster",
-            "a friendship bracelet with a twist",
-            "a school play that went wrong",
-            "the detention room incident",
-            "a letter passed in class",
-        ],
-    },
-    "psych_tradeoff": {
-        "id": "psych_tradeoff",
-        "label": "Psychology / habits (non-clinical)",
-        "groq_system_hint": (
-            "You write Shorts about habits, motivation, and everyday psychology. "
-            "Never diagnose or claim medical facts. Use 'some people' / 'research suggests' carefully. "
-            "Practical tips only."
-        ),
-        "segment_count": 5,
-        "topic_pool": [
-            "why procrastination actually happens",
-            "the 2-minute rule for habits",
-            "why we care what strangers think",
-            "how your morning sets your day",
-            "the truth about motivation",
-            "why boredom is good for you",
-            "the psychology of saying no",
-            "why small wins matter",
-            "how overthinking actually hurts",
-            "the real reason we scroll endlessly",
-        ],
-    },
-    "history_micro": {
-        "id": "history_micro",
-        "label": "One moment in history",
-        "groq_system_hint": (
-            "You write one tight historical anecdote per Short. Pick public-domain or widely taught events. "
-            "No graphic violence. End with why it matters in one line."
-        ),
-        "segment_count": 5,
-        "topic_pool": [
-            "a lesser-known ancient invention",
-            "a moment that almost changed history",
-            "an underrated figure from ancient times",
-            "a coincidence that shaped a war",
-            "a forgotten discovery at sea",
-            "an ancient ruler's unexpected habit",
-            "a medieval tradition nobody remembers",
-            "a natural disaster that changed a city",
-            "a lost city that was finally found",
-            "an accidental scientific breakthrough",
-        ],
-    },
-    "ghost_stories": {
-        "id": "ghost_stories",
-        "label": "Ghost / horror storytime Short",
-        "min_words": 100,
-        "groq_system_hint": (
-            "You write spooky ghost story Shorts for YouTube. "
-            "CRITICAL LENGTH RULE: The TOTAL word count across ALL 6 segments MUST be 120-140 words. "
-            "Each segment narration = 2-3 sentences, about 20-25 words per segment. "
-            "This produces 35-45 seconds of audio when read aloud. "
-            "Tone: eerie, suspenseful, creepy but NOT gory or violent. "
-            "Segment 1: hook that stops scrolling. Last segment: chilling twist or unanswered question. "
-            "All stories fictional. Original characters. PG-13. No hashtags in narration."
-        ),
-        "segment_count": 6,
-        "image_style_suffix": (
-            ", dark spooky cartoon illustration, eerie atmosphere, creepy stylized art, "
-            "bold outlines, muted haunting colors, horror cartoon aesthetic, ghostly shadows, "
-            "dramatic lighting, sinister mood, professional youtube thumbnail quality, "
-            "no text, no captions, no watermark, no logos"
-        ),
-        "image_negative_prompt": (
-            "photorealistic, photograph, happy cheerful bright, anime eyes, blurry, "
-            "low quality, watermark, logo, text, title, signature, ugly, grainy, "
-            "gore, blood, nudity, child-unsafe"
+            "cartoon, anime, illustration, painting, drawing, old photo, black and white, "
+            "vintage, 1980s, 1990s, finance, legal, food, horror, ghost, fantasy, "
+            "low quality, blurry, watermark, logo, text, signature, deformed"
         ),
         "topic_pool": [
-            "a ghost haunting an empty school at night",
-            "a strange presence in a family home",
-            "something unexplained during a picnic in the woods",
-            "a ghost encounter at a friend's sleepover",
-            "a haunted old cabin during a camping trip",
-            "a ghost on a late-night train",
-            "something wrong with the new neighbor's house",
-            "a spirit in grandparents' attic",
-            "an abandoned playground after dark",
-            "a ghost at a roadside motel",
-            "strange events at a wedding venue",
-            "a haunted library after closing",
-            "something watching from the forest edge",
-            "a ghost during a blackout storm",
-            "an eerie presence at a local hospital",
-            "something in the basement nobody talks about",
-            "a ghost on a deserted beach at night",
-            "a haunted elevator in an old building",
-            "a strange figure at a bus stop at 3 AM",
-            "something whispering from an old well",
-            "a ghost in a classroom after everyone left",
-            "a haunted antique bought from a flea market",
-            "a spirit tied to an old family photograph",
-            "something in the fog on a mountain road",
-            "a ghost at a summer camp",
+            # ── FIFA Club World Cup 2025 (LIVE NOW) ──────────────────────────
+            "why Real Madrid are the most feared team at Club World Cup 2025",
+            "how Manchester City built the squad that conquered Club World Cup",
+            "the Club World Cup 2025 team nobody gave a chance — and why they matter",
+            "PSG's Club World Cup 2025 squad — the most expensive ever assembled",
+            "why the 2025 Club World Cup 32-team format changes football forever",
+            "the youngest player making headlines at Club World Cup 2025",
+            "how South American clubs are proving they match European giants in 2025",
+            "the Club World Cup stat that proves Real Madrid always find a way",
+            # ── Messi ────────────────────────────────────────────────────────
+            "why Messi's 2022 World Cup final is statistically the greatest match ever played",
+            "the record Messi holds that no modern player will ever break",
+            "how Messi went from nearly quitting football at 11 to GOAT",
+            "Messi's secret pre-match ritual that he's done since Barcelona",
+            "every Ballon d'Or Messi won — and the years he was robbed",
+            "what happened after Messi cried at the Copa América 2016 final",
+            "how Messi's Inter Miami move shocked European football in 2023",
+            "the one match where Messi scored 5 goals and nobody could stop him",
+            # ── Ronaldo (CR7) ────────────────────────────────────────────────
+            "how Cristiano Ronaldo turned himself into the most complete footballer ever",
+            "the Champions League final moment that proved Ronaldo was different",
+            "why Ronaldo's move to Saudi Arabia was smarter than people think",
+            "the training schedule Ronaldo follows that no other player can match",
+            "Ronaldo's rivalry with Messi — the stat that actually settles it",
+            "how Ronaldo became the first player to score 900 career goals",
+            "the night Ronaldo was booed at Old Trafford — and what happened next",
+            "why Ronaldo's second Man United spell ended the way it did",
+            # ── Mbappé ───────────────────────────────────────────────────────
+            "how Mbappé became the fastest player in World Cup history at 19",
+            "the Real Madrid transfer saga that took Mbappé 3 years to complete",
+            "why Mbappé's contract clause at PSG was worth more than most clubs",
+            "how Mbappé's speed compares to every modern footballer by the numbers",
+            "the 2018 World Cup final moment that made the world notice Mbappé",
+            "what Mbappé's first season at Real Madrid actually looks like in stats",
+            # ── Haaland ─────────────────────────────────────────────────────
+            "how Erling Haaland scored 52 goals in one Premier League season",
+            "Haaland's goal per minute rate that breaks every football record",
+            "the diet and sleep routine Haaland credits for his superhuman form",
+            "why Haaland was the most wanted striker in football in 2022",
+            "how Dortmund developed Haaland into the player Man City bought",
+            # ── Next Gen: Bellingham, Vinicius, Yamal, Pedri ─────────────────
+            "how Jude Bellingham became Real Madrid's most important player overnight",
+            "Vinicius Jr's transformation from raw teen to Ballon d'Or contender",
+            "Lamine Yamal at 16 — the stats that prove he's a generational talent",
+            "how Pedri plays 60+ games a season and never seems to get tired",
+            "why Bellingham's move to Real Madrid was the transfer of the decade",
+            "the Salah record at Liverpool that no modern winger can come close to",
+            # ── Modern Club Eras ─────────────────────────────────────────────
+            "how Pep Guardiola's Man City won 4 straight Premier League titles",
+            "Klopp's Liverpool — the system that made them the best in the world",
+            "why Real Madrid always produce Champions League miracles in knockouts",
+            "how Barcelona's tiki-taka era collapsed almost overnight",
+            "the Inter Milan treble season — how Mourinho built the perfect squad",
+            "Chelsea's 2012 Champions League win — the greatest underdog final ever",
+            "how Atletico Madrid stunned Real Madrid and Barcelona for a decade",
+            "why PSG spent €700M on superstars and never won the Champions League",
+            # ── Modern Transfer Drama ─────────────────────────────────────────
+            "why Neymar's €222M PSG transfer changed football money forever",
+            "how Haaland's release clause made Man City the deal of the century",
+            "the transfer that flopped hardest in Premier League history post-2010",
+            "why Mbappé's 2024 move to Real Madrid took three years of drama",
+            "how modern agents secretly drive transfer fees higher than clubs want",
+            "the underpaid superstar who was sold for nothing and became a legend",
+            # ── Modern Records & Stats ────────────────────────────────────────
+            "the fastest hat-trick in Premier League history — and who scored it",
+            "how many goals Messi and Ronaldo combined for in a single calendar year",
+            "the most expensive transfer window in football history — 2017 PSG",
+            "the modern goalkeeper with more goals than some strikers",
+            "the Champions League record that will never be broken in modern football",
+            "why the Premier League has the highest average wage in world football",
+            # ── Modern Managers ───────────────────────────────────────────────
+            "how Pep Guardiola reinvented football tactics three times at three clubs",
+            "why Klopp's gegenpressing system was the most copied style of the decade",
+            "Ancelotti's secret — the only manager to win the Champions League 4 times",
+            "how Mourinho's mind games changed what it means to be a football manager",
+            # ── Modern Controversies & Dark Side ─────────────────────────────
+            "how VAR has changed football — and why fans still hate it",
+            "the modern match-fixing scandal that shocked European football",
+            "why modern football wages are destroying team spirit at top clubs",
+            "how social media feuds between players have changed dressing room culture",
+            "the modern doping case nobody in football wants to talk about",
+            "why modern football clubs spend €100M on players they barely use",
         ],
     },
 }

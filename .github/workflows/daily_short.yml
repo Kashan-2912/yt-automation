@@ -1,17 +1,13 @@
-name: Daily YouTube Short
+name: Daily Football Short
 
 on:
   schedule:
-    - cron: "0 10 * * *"
-    - cron: "30 23 * * *" 
+    - cron: "0 15 * * *"  # 15:00 UTC = 11:00 AM EDT (US Eastern, summer)
+    - cron: "0 22 * * *"  # 22:00 UTC = 06:00 PM EDT (US Eastern, summer)
   workflow_dispatch:
     inputs:
-      channel:
-        description: "Channel preset (ghost_stories, facts, school_story, etc.)"
-        required: true
-        default: "ghost_stories"
       topic:
-        description: "Optional topic hint"
+        description: "Optional topic hint (leave empty for random pool pick)"
         required: false
         default: ""
 
@@ -21,12 +17,12 @@ env:
   YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
   YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
   YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-  EDGE_TTS_VOICE: "en-US-ChristopherNeural"
+  EDGE_TTS_VOICE: "en-US-GuyNeural"
 
 jobs:
   generate-and-upload:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -44,30 +40,28 @@ jobs:
       - name: Install Python deps
         run: pip install -r requirements.txt
 
-      # Restore story history from previous runs (prevents repeats)
+      # Restore story history — prevents repeating the same topic twice
       - name: Restore history cache
         uses: actions/cache/restore@v4
         with:
           path: output/history/
-          key: story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-${{ github.run_id }}
+          key: story-history-football-${{ github.run_id }}
           restore-keys: |
-            story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-
+            story-history-football-
 
       - name: Generate & upload Short
         run: |
-          CHANNEL="${{ github.event.inputs.channel || 'ghost_stories' }}"
           TOPIC="${{ github.event.inputs.topic || '' }}"
-
           if [ -n "$TOPIC" ]; then
-            python scripts/run_short.py --channel "$CHANNEL" --topic "$TOPIC" --upload --privacy public
+            python scripts/run_short.py --channel football --topic "$TOPIC" --upload --privacy public
           else
-            python scripts/run_short.py --channel "$CHANNEL" --upload --privacy public
+            python scripts/run_short.py --channel football --upload --privacy public
           fi
 
-      # Save history so next run knows what stories already exist
+      # Save history so next run doesn't repeat topics
       - name: Save history cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: output/history/
-          key: story-history-${{ github.event.inputs.channel || 'ghost_stories' }}-${{ github.run_id }}
+          key: story-history-football-${{ github.run_id }}

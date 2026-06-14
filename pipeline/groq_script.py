@@ -56,6 +56,15 @@ def generate_short_pack(
     if topic_hint:
         user += f"Topic idea from creator: {topic_hint}\n"
 
+    # Inject niche SEO keywords so the title stays on-brand every run
+    niche_kw = preset.get("niche_keywords") or []
+    if niche_kw:
+        kw_list = ", ".join(f'"{k}"' for k in niche_kw)
+        user += (
+            f"SEO TITLE RULE: The youtube_title MUST naturally include at least one of these keywords: "
+            f"{kw_list}. Do NOT force it — pick whichever fits the topic best.\n"
+        )
+
     if channel_id:
         anti_repeat = history_prompt_block(channel_id)
         if anti_repeat:
