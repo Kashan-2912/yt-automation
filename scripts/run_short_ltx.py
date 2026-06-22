@@ -50,6 +50,10 @@ DEAPI_TOKENS = [
     "kLc4wC1jBvD0y3crCyy5UWTE3F6i5CR9nZ4s2vd6956df81d",
     "iSWCv39zIWMpyMlIB8LirMcOEuW3JvzNivgQapxLc7243c98",
     "GplQ0cRbQCKnOVd7efJoOk0YlyoqmXZjEziQCrBQba2fdcc3",
+    "JSZOJagE5gIUgmOqqnO4EBfpvth8KHpJnkE4Kd7Ye128da12",
+    "cjdMSPDhe4cOyfWcZQcHvAQXHYadGZj4h2565Uvrf4610980",
+    "XoVcUBLInf58Jk4GKB8sp0oOyq6SQywo2978gQlgdbfed35d",
+    "XitC4DlDWS9flLDqO2xiDSMBFX0kFKwJsiFRPNyb6f1533d2",
 ]
 DEAPI_TOKENS = [t for t in DEAPI_TOKENS if t]
 current_token_idx = 0
