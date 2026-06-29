@@ -44,12 +44,16 @@ from pipeline.story_history import save_title
 # Configured DeAPI Tokens (Primary from .env + fallback pools)
 DEAPI_TOKENS = [
     os.environ.get("DEAPI_TOKEN", "").strip(),
-    "vvQBZjPmi2NFQIfFpgl0Tg0F0bL3Q089zEuCBDwpdf592e0e",
-    "CmoqMsdDCOMqyk2p5EWBuIEqGlIXnDXhzw0Qdi3if98d2c68",
-    "cHwRcpd9Y5C5exKKn8JtV0z6KCmGJXmjirwr7fNS9d853eaa",
-    "kLc4wC1jBvD0y3crCyy5UWTE3F6i5CR9nZ4s2vd6956df81d",
-    "iSWCv39zIWMpyMlIB8LirMcOEuW3JvzNivgQapxLc7243c98",
-    "GplQ0cRbQCKnOVd7efJoOk0YlyoqmXZjEziQCrBQba2fdcc3",
+    # "vvQBZjPmi2NFQIfFpgl0Tg0F0bL3Q089zEuCBDwpdf592e0e",
+    # "CmoqMsdDCOMqyk2p5EWBuIEqGlIXnDXhzw0Qdi3if98d2c68",
+    # "cHwRcpd9Y5C5exKKn8JtV0z6KCmGJXmjirwr7fNS9d853eaa",
+    # "kLc4wC1jBvD0y3crCyy5UWTE3F6i5CR9nZ4s2vd6956df81d",
+    # "iSWCv39zIWMpyMlIB8LirMcOEuW3JvzNivgQapxLc7243c98",
+    # "GplQ0cRbQCKnOVd7efJoOk0YlyoqmXZjEziQCrBQba2fdcc3",
+    "JSZOJagE5gIUgmOqqnO4EBfpvth8KHpJnkE4Kd7Ye128da12",
+    "cjdMSPDhe4cOyfWcZQcHvAQXHYadGZj4h2565Uvrf4610980",
+    "XoVcUBLInf58Jk4GKB8sp0oOyq6SQywo2978gQlgdbfed35d",
+    "XitC4DlDWS9flLDqO2xiDSMBFX0kFKwJsiFRPNyb6f1533d2",
 ]
 DEAPI_TOKENS = [t for t in DEAPI_TOKENS if t]
 current_token_idx = 0
@@ -64,6 +68,7 @@ HEIGHT  = 1024
 FPS     = 24
 FRAMES  = 97    # ~4.04 seconds
 
+MIN_CLIPS = 4   # minimum clips to proceed with rendering
 FADE_DUR = 0.45
 TRANSITIONS = [
     "dissolve",
@@ -92,7 +97,7 @@ def get_token_preview(token: str) -> str:
 
 
 def submit_video(prompt: str, client: httpx.Client) -> tuple[str, str]:
-    """Submit a txt2video job. Rotates token on rate limit or credit limit errors."""
+    """Submit a txt2video job. Rotates token on rate limit, credit, or 422 errors."""
     global current_token_idx
     payload = {
         "prompt": prompt,
@@ -119,16 +124,18 @@ def submit_video(prompt: str, client: httpx.Client) -> tuple[str, str]:
 
         try:
             resp = client.post(SUBMIT_URL, json=payload, headers=headers, timeout=60.0)
-            
-            is_credit_limit = False
-            if resp.status_code in (400, 402, 422):
-                err_text = resp.text.lower()
-                if any(kw in err_text for kw in ["credit", "limit", "insufficient", "payment"]):
-                    is_credit_limit = True
-                    print(f"      [Limit/Credit Error] Token {preview} failed: {resp.text}")
 
-            if resp.status_code == 429 or is_credit_limit:
-                print(f"      Token {preview} hit limits. Rotating to next token...")
+            # Treat 422/400/402 as rotatable — often means credit exhaustion
+            # even when the error body doesn't contain standard keywords
+            if resp.status_code in (400, 402, 422):
+                print(f"      [{resp.status_code} Error] Token {preview}: {resp.text[:200]}")
+                print(f"      Rotating to next token...")
+                current_token_idx += 1
+                time.sleep(2)
+                continue
+
+            if resp.status_code == 429:
+                print(f"      Token {preview} hit rate limit. Rotating to next token...")
                 current_token_idx += 1
                 time.sleep(2)
                 continue
@@ -393,39 +400,62 @@ def main() -> None:
 
     # 4. Generate 8 Videos via DeAPI txt2video
     cooldown = 10
-    print(f"\n④ DeAPI Video Generation: 8 clips ({cooldown}s cooldown between submissions)...")
+    n_prompts = len(video_prompts)
+    print(f"\n④ DeAPI Video Generation: {n_prompts} clips ({cooldown}s cooldown between submissions)...")
     raw_video_paths = []
     
     with httpx.Client(timeout=120.0) as client:
         for i, prompt in enumerate(video_prompts, 1):
             full_prompt = prompt + (preset.get("image_style_suffix") or "")
-            print(f"   [Clip {i}/8] Submitting prompt: {full_prompt[:80]}...")
+            print(f"   [Clip {i}/{n_prompts}] Submitting prompt: {full_prompt[:80]}...")
             
-            request_id, successful_token = submit_video(full_prompt, client)
-            print(f"      Job ID: {request_id}")
+            clip_ok = False
+            for clip_attempt in range(3):  # up to 3 attempts per clip
+                try:
+                    if clip_attempt > 0:
+                        print(f"      [Retry {clip_attempt}/2] Re-attempting clip {i}...")
+                        time.sleep(5)
+                    request_id, successful_token = submit_video(full_prompt, client)
+                    print(f"      Job ID: {request_id}")
+                    
+                    video_bytes = poll_video(request_id, successful_token, client)
+                    
+                    clip_path = vid_dir / f"raw_clip_{i:02d}.mp4"
+                    clip_path.write_bytes(video_bytes)
+                    print(f"      Saved raw clip to: {clip_path} ({len(video_bytes)//1024}KB)")
+                    raw_video_paths.append(clip_path)
+                    clip_ok = True
+                    break
+                except Exception as e:
+                    print(f"      [Clip {i} Error] Attempt {clip_attempt + 1}/3 failed: {e}")
             
-            video_bytes = poll_video(request_id, successful_token, client)
-            
-            clip_path = vid_dir / f"raw_clip_{i:02d}.mp4"
-            clip_path.write_bytes(video_bytes)
-            print(f"      Saved raw clip to: {clip_path} ({len(video_bytes)//1024}KB)")
-            raw_video_paths.append(clip_path)
+            if not clip_ok:
+                print(f"      ⚠ Clip {i} SKIPPED after 3 failed attempts")
 
-            if i < len(video_prompts):
+            if i < n_prompts:
                 print(f"      Waiting {cooldown}s cooldown...")
                 time.sleep(cooldown)
 
+    n_clips = len(raw_video_paths)
+    if n_clips < MIN_CLIPS:
+        raise RuntimeError(
+            f"Only {n_clips}/{n_prompts} clips generated — need at least {MIN_CLIPS}. "
+            f"All DeAPI tokens may be exhausted."
+        )
+    if n_clips < n_prompts:
+        print(f"\n   ⚠ Continuing with {n_clips}/{n_prompts} clips (minimum {MIN_CLIPS} met)")
+
     # 5. Pre-process and time-scale clips
     print("\n⑤ Pre-processing clips (scaling, cropping to 1080x1920, and adjusting speed)...")
-    clip_dur = (total_dur + 7 * FADE_DUR) / 8
-    print(f"   Target duration per clip: {clip_dur:.2f}s")
+    clip_dur = (total_dur + (n_clips - 1) * FADE_DUR) / n_clips
+    print(f"   Target duration per clip: {clip_dur:.2f}s ({n_clips} clips)")
     
     processed_video_paths = []
     for i, raw_path in enumerate(raw_video_paths, 1):
         proc_path = tmp_dir / f"clip_{i:02d}.mp4"
         preprocess_clip(raw_path, proc_path, clip_dur)
         processed_video_paths.append(proc_path)
-        print(f"   Processed clip {i}/8")
+        print(f"   Processed clip {i}/{n_clips}")
 
     # 6. Render final video
     print("\n⑥ Stitching and rendering final short video...")
