@@ -19,6 +19,7 @@ on:
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
   DEAPI_TOKEN: ${{ secrets.DEAPI_TOKEN }}
+  DEAPI_TOKENS: ${{ secrets.DEAPI_TOKENS }}
   YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
   YT_CLIENT_SECRET_VALUE: ${{ secrets.YT_CLIENT_SECRET_VALUE }}
   YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}

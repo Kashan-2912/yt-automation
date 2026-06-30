@@ -42,8 +42,17 @@ from pipeline.groq_script import generate_short_pack
 from pipeline.story_history import save_title
 
 # Configured DeAPI Tokens (Primary from .env + fallback pools)
-_env_tokens = os.environ.get("DEAPI_TOKENS", "") or os.environ.get("DEAPI_TOKEN", "")
-DEAPI_TOKENS = [t.strip() for t in _env_tokens.split(",") if t.strip()]
+_raw_tokens = []
+for _var in ["DEAPI_TOKEN", "DEAPI_TOKENS"]:
+    _val = os.environ.get(_var, "").strip()
+    if _val:
+        _raw_tokens.extend([t.strip() for t in _val.split(",") if t.strip()])
+
+# Keep unique tokens while preserving order
+DEAPI_TOKENS = []
+for _t in _raw_tokens:
+    if _t not in DEAPI_TOKENS:
+        DEAPI_TOKENS.append(_t)
 
 # Commented out hardcoded fallback keys (all configured via .env now)
 # DEAPI_TOKENS_FALLBACK = [
