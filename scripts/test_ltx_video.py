@@ -25,6 +25,11 @@ sys.path.insert(0, str(REPO_ROOT))
 load_dotenv(REPO_ROOT / ".env")
 
 DEAPI_TOKEN = os.environ.get("DEAPI_TOKEN", "").strip()
+if not DEAPI_TOKEN:
+    tokens_str = os.environ.get("DEAPI_TOKENS", "").strip()
+    tokens = [t.strip() for t in tokens_str.split(",") if t.strip()]
+    if tokens:
+        DEAPI_TOKEN = tokens[0]
 
 SUBMIT_URL  = "https://api.deapi.ai/api/v1/client/txt2video"
 POLL_URL    = "https://api.deapi.ai/api/v1/client/request-status"

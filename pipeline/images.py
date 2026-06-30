@@ -124,6 +124,12 @@ def save_scene_image(
     """Generate and save one image. Returns (status, detail)."""
     api_key = os.environ.get("DEAPI_TOKEN", "").strip()
     if not api_key:
+        tokens_str = os.environ.get("DEAPI_TOKENS", "").strip()
+        tokens = [t.strip() for t in tokens_str.split(",") if t.strip()]
+        if tokens:
+            api_key = tokens[0]
+
+    if not api_key:
         return "fail", "DEAPI_TOKEN not set"
 
     model = os.environ.get("DEAPI_MODEL", "Flux_2_Klein_4B_BF16")
